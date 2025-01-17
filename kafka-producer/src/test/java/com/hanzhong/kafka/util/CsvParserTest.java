@@ -1,17 +1,16 @@
 package com.hanzhong.kafka.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class CsvParserTest {
 
@@ -26,12 +25,9 @@ class CsvParserTest {
         // 创建测试CSV文件
         testFile = tempDir.resolve("test.csv").toFile();
         try (FileWriter writer = new FileWriter(testFile)) {
-            writer.write(
-                "id,createTime,category,novelName,authorName,authorLevel,updateTime,wordCount,monthlyTicket,totalClick,status,completeTime\n");
-            writer.write(
-                "7196,2012-03-12 09:51:04,历史,新三国策,晶晶亮,Lv.4,2023-03-25 09:20:37,65668,599,1136931,完本,2005-12-29 00:00:00\n");
-            writer.write(
-                "7197,2012-03-12 09:51:04,都市,花开堪折,雪域倾情,,1970-01-01 08:00:00,,0,,,1970-01-01 08:00:00\n");
+            writer.write("id,createTime,category,novelName,authorName,authorLevel,updateTime,wordCount,monthlyTicket,totalClick,status,completeTime\n");
+            writer.write("7196,2012-03-12 09:51:04,历史,新三国策,晶晶亮,Lv.4,2023-03-25 09:20:37,65668,599,1136931,完本,2005-12-29 00:00:00\n");
+            writer.write("7197,2012-03-12 09:51:04,都市,花开堪折,雪域倾情,,1970-01-01 08:00:00,,0,,,1970-01-01 08:00:00\n");
         }
 
         parser = new CsvParser(testFile.getAbsolutePath());

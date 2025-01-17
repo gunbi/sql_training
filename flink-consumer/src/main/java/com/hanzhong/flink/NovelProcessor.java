@@ -2,7 +2,6 @@ package com.hanzhong.flink;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Properties;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
@@ -11,9 +10,14 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.types.Row;
+import org.apache.flink.api.java.io.jdbc.JDBCAppendTableSink;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+
+import java.util.Properties;
 
 public class NovelProcessor {
-
     public static void main(String[] args) throws Exception {
         final ParameterTool params = ParameterTool.fromArgs(args);
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -48,10 +52,8 @@ public class NovelProcessor {
         properties.setProperty("auto.offset.reset", "earliest");
 
         // 设置反序列化
-        properties.setProperty("key.deserializer",
-            "org.apache.kafka.common.serialization.StringDeserializer");
-        properties.setProperty("value.deserializer",
-            "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
 
         // 设置 Kafka 连接重试
         properties.setProperty("reconnect.backoff.ms", "1000");
@@ -114,8 +116,7 @@ public class NovelProcessor {
             }).name("NovelProcessor");
 
         // 写入MySQL
-        String jdbcUrl = String.format(
-            "jdbc:mysql://%s:%s/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8",
+        String jdbcUrl = String.format("jdbc:mysql://%s:%s/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useUnicode=true&characterEncoding=utf8",
             mysqlHost, mysqlPort, mysqlDatabase);
 
         resultStream.addSink(new MySqlSink(
@@ -123,9 +124,8 @@ public class NovelProcessor {
             mysqlUser,
             mysqlPassword,
             "REPLACE INTO novels (id, create_time, category, novel_name, author_name, " +
-                "author_level, update_time, word_count, monthly_ticket, total_click, status, complete_time) "
-                +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "author_level, update_time, word_count, monthly_ticket, total_click, status, complete_time) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )).name("MySqlSink").setParallelism(1);
 
         env.execute("Novel Processor");

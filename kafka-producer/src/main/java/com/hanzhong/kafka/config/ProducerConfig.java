@@ -6,7 +6,6 @@ import lombok.Getter;
 @Getter
 @Builder
 public class ProducerConfig {
-
     private final String bootstrapServers;
     private final String topic;
     private final String filePath;

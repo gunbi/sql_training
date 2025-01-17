@@ -1,8 +1,16 @@
 package com.hanzhong.kafka;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hanzhong.kafka.config.ProducerConfig;
 import com.hanzhong.kafka.util.CsvParser;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Properties;
@@ -10,17 +18,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
 
 @Slf4j
 public class CsvKafkaProducer {
-
     private final ProducerConfig config;
     private final Producer<String, String> producer;
     private final ScheduledExecutorService executor;
@@ -107,10 +107,8 @@ public class CsvKafkaProducer {
                         if (exception != null) {
                             log.error("发送消息失败: {}", exception.getMessage());
                         } else {
-                            log.info(
-                                "消息发送成功 - topic: {}, partition: {}, offset: {}, id: {}, data: {}",
-                                metadata.topic(), metadata.partition(), metadata.offset(), id,
-                                json);
+                            log.info("消息发送成功 - topic: {}, partition: {}, offset: {}, id: {}, data: {}",
+                                metadata.topic(), metadata.partition(), metadata.offset(), id, json);
                         }
                     });
                 } catch (Exception e) {
@@ -146,8 +144,7 @@ public class CsvKafkaProducer {
 
     public static void main(String[] args) {
         if (args.length < 4) {
-            log.error(
-                "Usage: CsvKafkaProducer <bootstrapServers> <topic> <csvFilePath> <messagesPerSecond>");
+            log.error("Usage: CsvKafkaProducer <bootstrapServers> <topic> <csvFilePath> <messagesPerSecond>");
             System.exit(1);
         }
 
@@ -174,8 +171,7 @@ public class CsvKafkaProducer {
         }));
 
         try {
-            log.info(
-                "启动生产者 - bootstrapServers: {}, topic: {}, csvFile: {}, messagesPerSecond: {}",
+            log.info("启动生产者 - bootstrapServers: {}, topic: {}, csvFile: {}, messagesPerSecond: {}",
                 bootstrapServers, topic, csvFilePath, messagesPerSecond);
             producer.start();
         } catch (Exception e) {

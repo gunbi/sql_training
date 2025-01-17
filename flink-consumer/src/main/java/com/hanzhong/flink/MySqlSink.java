@@ -1,14 +1,14 @@
 package com.hanzhong.flink;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.types.Row;
 
-public class MySqlSink extends RichSinkFunction<Row> {
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 
+public class MySqlSink extends RichSinkFunction<Row> {
     private final String jdbcUrl;
     private final String username;
     private final String password;
