@@ -1,16 +1,8 @@
 package com.hanzhong.kafka;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hanzhong.kafka.config.ProducerConfig;
 import com.hanzhong.kafka.util.CsvParser;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
-import lombok.extern.slf4j.Slf4j;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Properties;
@@ -18,14 +10,22 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 @Slf4j
 public class CsvKafkaProducer {
+
     private final ProducerConfig config;
     private final Producer<String, String> producer;
     private final ScheduledExecutorService executor;
     private CsvParser csvParser;
-    
+
     public CsvKafkaProducer(ProducerConfig config) {
         this.config = config;
         createTopicIfNotExists();
@@ -33,15 +33,15 @@ public class CsvKafkaProducer {
         this.executor = Executors.newScheduledThreadPool(1);
         this.csvParser = new CsvParser(config.getFilePath());
     }
-    
+
     private void createTopicIfNotExists() {
         Properties props = new Properties();
         props.put("bootstrap.servers", config.getBootstrapServers());
-        
+
         try (AdminClient adminClient = AdminClient.create(props)) {
             boolean topicExists = adminClient.listTopics().names().get()
                 .contains(config.getTopic());
-            
+
             if (!topicExists) {
                 log.info("创建topic: {}", config.getTopic());
                 NewTopic newTopic = new NewTopic(
@@ -49,7 +49,7 @@ public class CsvKafkaProducer {
                     config.getPartitions(),
                     config.getReplicationFactor()
                 );
-                
+
                 adminClient.createTopics(Collections.singleton(newTopic)).all().get();
                 log.info("Topic创建成功");
             } else {
@@ -59,7 +59,7 @@ public class CsvKafkaProducer {
             throw new RuntimeException("创建topic失败: " + e.getMessage(), e);
         }
     }
-    
+
     private Producer<String, String> createProducer() {
         Properties props = new Properties();
         props.put("bootstrap.servers", config.getBootstrapServers());
@@ -70,10 +70,10 @@ public class CsvKafkaProducer {
         props.put("batch.size", 16384);
         props.put("linger.ms", 1);
         props.put("buffer.memory", 33554432);
-        
+
         return new KafkaProducer<>(props);
     }
-    
+
     private void reopenFile() throws IOException {
         if (csvParser != null) {
             csvParser.close();
@@ -81,13 +81,13 @@ public class CsvKafkaProducer {
         csvParser = new CsvParser(config.getFilePath());
         csvParser.open();
     }
-    
+
     public void start() {
         try {
             reopenFile();
-            
+
             long intervalMs = 1000L / config.getMessagesPerSecond();
-            
+
             executor.scheduleAtFixedRate(() -> {
                 try {
                     ObjectNode data = csvParser.parseLine();
@@ -96,32 +96,34 @@ public class CsvKafkaProducer {
                         reopenFile();
                         return;
                     }
-                    
+
                     String json = data.toString();
                     String id = data.get("id").asText();
-                    
-                    ProducerRecord<String, String> record = 
+
+                    ProducerRecord<String, String> record =
                         new ProducerRecord<>(config.getTopic(), id, json);
-                    
+
                     producer.send(record, (metadata, exception) -> {
                         if (exception != null) {
                             log.error("发送消息失败: {}", exception.getMessage());
                         } else {
-                            log.info("消息发送成功 - topic: {}, partition: {}, offset: {}, id: {}, data: {}",
-                                metadata.topic(), metadata.partition(), metadata.offset(), id, json);
+                            log.info(
+                                "消息发送成功 - topic: {}, partition: {}, offset: {}, id: {}, data: {}",
+                                metadata.topic(), metadata.partition(), metadata.offset(), id,
+                                json);
                         }
                     });
                 } catch (Exception e) {
                     log.error("处理消息时发生错误: ", e);
                 }
             }, 0, intervalMs, TimeUnit.MILLISECONDS);
-            
+
         } catch (Exception e) {
             log.error("启动生产者时发生错误: {}", e.getMessage());
             stop();
         }
     }
-    
+
     public void stop() {
         try {
             if (executor != null) {
@@ -144,7 +146,8 @@ public class CsvKafkaProducer {
 
     public static void main(String[] args) {
         if (args.length < 4) {
-            log.error("Usage: CsvKafkaProducer <bootstrapServers> <topic> <csvFilePath> <messagesPerSecond>");
+            log.error(
+                "Usage: CsvKafkaProducer <bootstrapServers> <topic> <csvFilePath> <messagesPerSecond>");
             System.exit(1);
         }
 
@@ -171,7 +174,8 @@ public class CsvKafkaProducer {
         }));
 
         try {
-            log.info("启动生产者 - bootstrapServers: {}, topic: {}, csvFile: {}, messagesPerSecond: {}",
+            log.info(
+                "启动生产者 - bootstrapServers: {}, topic: {}, csvFile: {}, messagesPerSecond: {}",
                 bootstrapServers, topic, csvFilePath, messagesPerSecond);
             producer.start();
         } catch (Exception e) {

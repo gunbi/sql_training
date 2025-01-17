@@ -1,12 +1,13 @@
 package com.hanzhong.flink;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Data;
 import java.sql.Timestamp;
 import java.time.Instant;
+import lombok.Data;
 
 @Data
 public class Novel {
+
     private long id;
     private Timestamp createTime;
     private String category;
