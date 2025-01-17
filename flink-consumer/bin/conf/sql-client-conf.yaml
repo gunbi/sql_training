@@ -1,0 +1,107 @@
+# 执行环境配置
+execution:
+  planner: blink  # 使用 blink planner
+  type: streaming # 流处理模式
+  parallelism: 1
+
+# 表定义
+tables:
+  # Kafka 源表
+  - name: kafka_novels
+    type: source
+    update-mode: append
+    schema:
+      - name: id
+        type: BIGINT
+      - name: createTime
+        type: STRING
+      - name: category
+        type: STRING
+      - name: novelName
+        type: STRING
+      - name: authorName
+        type: STRING
+      - name: authorLevel
+        type: STRING
+      - name: updateTime
+        type: STRING
+      - name: wordCount
+        type: BIGINT
+      - name: monthlyTicket
+        type: BIGINT
+      - name: totalClick
+        type: BIGINT
+      - name: status
+        type: STRING
+      - name: completeTime
+        type: STRING
+    connector:
+      property-version: 1
+      type: kafka
+      version: universal    # 使用通用版本，支持 Kafka 3.x
+      topic: test-topic
+      startup-mode: earliest-offset
+      properties:
+        - key: bootstrap.servers
+          value: localhost:29092
+        - key: auto.offset.reset
+          value: earliest
+    format:
+      property-version: 1
+      type: json
+      schema: "ROW(id BIGINT,createTime STRING,category STRING,novelName STRING,authorName STRING,authorLevel STRING,updateTime STRING,wordCount BIGINT,monthlyTicket BIGINT,totalClick BIGINT,status STRING,completeTime STRING)"
+
+  # MySQL 结果表
+  - name: mysql_novels
+    type: sink
+    schema:
+      - name: id
+        type: BIGINT
+      - name: create_time
+        type: STRING
+      - name: category
+        type: STRING
+      - name: novel_name
+        type: STRING
+      - name: author_name
+        type: STRING
+      - name: author_level
+        type: STRING
+      - name: update_time
+        type: STRING
+      - name: word_count
+        type: BIGINT
+      - name: monthly_ticket
+        type: BIGINT
+      - name: total_click
+        type: BIGINT
+      - name: status
+        type: STRING
+      - name: complete_time
+        type: STRING
+    connector:
+      property-version: 1
+      type: jdbc
+      driver: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/novels?useSSL=false&allowPublicKeyRetrieval=true
+      table: novels
+      username: flink
+      password: flink123
+      write.flush.max-rows: 1
+      write.flush.interval: 1000
+
+# 示例查询
+# SELECT * FROM kafka_novels;
+# 
+# INSERT INTO mysql_novels
+# SELECT id, createTime as create_time, category, novelName as novel_name, authorName as author_name,
+#        authorLevel as author_level, updateTime as update_time, wordCount as word_count, monthlyTicket as monthly_ticket,
+#        totalClick as total_click, status, completeTime as complete_time
+# FROM kafka_novels;
+#
+# SELECT 
+#     category,
+#     COUNT(*) as novel_count,
+#     AVG(CAST(monthlyTicket AS DOUBLE)) as avg_tickets
+# FROM kafka_novels
+# GROUP BY category;
