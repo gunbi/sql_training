@@ -5,7 +5,7 @@
 ## 环境要求
 
 - Docker & Docker Compose
-- Apache Flink 1.9
+- Apache Flink 1.11.0
 - Java 8+
 
 ## 快速开始
@@ -14,7 +14,7 @@
 
 首先确保已经安装了所需的软件：
 - Docker 和 Docker Compose
-- Apache Flink 1.9（本地安装）
+- [Apache Flink 1.11.0](https://archive.apache.org/dist/flink/flink-1.11.0/flink-1.11.0-bin-scala_2.11.tgz)（本地解压）
 
 ### 2. 启动依赖服务
 
