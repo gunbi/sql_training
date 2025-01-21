@@ -14,7 +14,7 @@ tables:
       - name: id
         type: BIGINT
       - name: createTime
-        type: STRING
+        type: BIGINT  # 改为BIGINT以匹配物理类型
       - name: category
         type: STRING
       - name: novelName
@@ -24,7 +24,7 @@ tables:
       - name: authorLevel
         type: STRING
       - name: updateTime
-        type: STRING
+        type: BIGINT  # 改为BIGINT以匹配物理类型
       - name: wordCount
         type: BIGINT
       - name: monthlyTicket
@@ -34,7 +34,21 @@ tables:
       - name: status
         type: STRING
       - name: completeTime
-        type: STRING
+        type: BIGINT  # 改为BIGINT以匹配物理类型
+      # 定义 completeTime 为 Event Time
+      - name: event_time
+        type: TIMESTAMP
+        rowtime:
+          timestamps:
+            type: from-field
+            from: completeTime
+          watermarks:
+            type: periodic-bounded
+            delay: 5000
+      # 定义处理时间
+      - name: proc_time
+        type: TIMESTAMP
+        proctime: true
     connector:
       property-version: 1
       type: kafka
@@ -49,7 +63,7 @@ tables:
     format:
       property-version: 1
       type: json
-      schema: "ROW(id BIGINT,createTime STRING,category STRING,novelName STRING,authorName STRING,authorLevel STRING,updateTime STRING,wordCount BIGINT,monthlyTicket BIGINT,totalClick BIGINT,status STRING,completeTime STRING)"
+      schema: "ROW(id BIGINT, createTime BIGINT, category STRING, novelName STRING, authorName STRING, authorLevel STRING, updateTime BIGINT, wordCount BIGINT, monthlyTicket BIGINT, totalClick BIGINT, status STRING, completeTime BIGINT)"
 
   # MySQL 结果表
   - name: mysql_novels
@@ -58,7 +72,7 @@ tables:
       - name: id
         type: BIGINT
       - name: create_time
-        type: STRING
+        type: TIMESTAMP
       - name: category
         type: STRING
       - name: novel_name
@@ -68,7 +82,7 @@ tables:
       - name: author_level
         type: STRING
       - name: update_time
-        type: STRING
+        type: TIMESTAMP
       - name: word_count
         type: BIGINT
       - name: monthly_ticket
@@ -78,30 +92,55 @@ tables:
       - name: status
         type: STRING
       - name: complete_time
-        type: STRING
+        type: TIMESTAMP
     connector:
       property-version: 1
       type: jdbc
       driver: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/novels?useSSL=false&allowPublicKeyRetrieval=true
+      url: jdbc:mysql://localhost:3306/novels?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       table: novels
       username: flink
       password: flink123
       write.flush.max-rows: 1
       write.flush.interval: 1000
 
+
 # 示例查询
-# SELECT * FROM kafka_novels;
-# 
-# INSERT INTO mysql_novels
-# SELECT id, createTime as create_time, category, novelName as novel_name, authorName as author_name,
-#        authorLevel as author_level, updateTime as update_time, wordCount as word_count, monthlyTicket as monthly_ticket,
-#        totalClick as total_click, status, completeTime as complete_time
-# FROM kafka_novels;
-#
+# 基于事件时间的窗口查询
 # SELECT 
-#     category,
-#     COUNT(*) as novel_count,
-#     AVG(CAST(monthlyTicket AS DOUBLE)) as avg_tickets
+#   TUMBLE_START(event_time, INTERVAL '7' DAY ) as window_start,
+#   category,
+#   COUNT(*) as novel_count,
+#   AVG(CAST(wordCount AS DOUBLE)) as avg_word_count
 # FROM kafka_novels
-# GROUP BY category;
+# GROUP BY 
+#   TUMBLE(event_time, INTERVAL '7' DAY),
+#   category;
+#
+# 基于处理时间的窗口查询
+# SELECT 
+#   HOP_START(proc_time, INTERVAL '1' MINUTE, INTERVAL '1' HOUR) as window_start,
+#   HOP_END(proc_time, INTERVAL '1' MINUTE, INTERVAL '1' HOUR) as window_end,
+#   category,
+#   COUNT(*) as novel_count
+# FROM kafka_novels
+# GROUP BY 
+#   HOP(proc_time, INTERVAL '1' MINUTE, INTERVAL '1' HOUR),
+#   category;
+#
+# 使用INSERT INTO来处理数据
+# INSERT INFO mysql_novels
+# SELECT
+#   id,
+#   TO_TIMESTAMP(FROM_UNIXTIME(createTime/1000)) as create_time,
+#   category,
+#   novelName as novel_name,
+#   authorName as author_name,
+#   authorLevel as author_level,
+#   TO_TIMESTAMP(FROM_UNIXTIME(updateTime/1000)) as update_time,
+#   wordCount as word_count,
+#   monthlyTicket as monthly_ticket,
+#   totalClick as total_click,
+#   status,
+#   TO_TIMESTAMP(FROM_UNIXTIME(completeTime/1000)) as complete_time
+# FROM kafka_novels;

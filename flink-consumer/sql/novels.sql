@@ -1,17 +1,17 @@
 -- 创建 Kafka Source 表
 CREATE TABLE kafka_novels (
     id BIGINT,
-    createTime TIMESTAMP(3),
+    createTime TIMESTAMP,
     category STRING,
     novelName STRING,
     authorName STRING,
     authorLevel STRING,
-    updateTime TIMESTAMP(3),
+    updateTime TIMESTAMP,
     wordCount BIGINT,
     monthlyTicket BIGINT,
     totalClick BIGINT,
     status STRING,
-    completeTime TIMESTAMP(3),
+    completeTime TIMESTAMP,
     proc_time AS PROCTIME()
 ) WITH (
     'connector' = 'kafka',
@@ -25,17 +25,17 @@ CREATE TABLE kafka_novels (
 -- 创建 MySQL Sink 表
 CREATE TABLE mysql_novels (
     id BIGINT PRIMARY KEY,
-    createTime TIMESTAMP(3),
+    createTime TIMESTAMP,
     category STRING,
     novelName STRING,
     authorName STRING,
     authorLevel STRING,
-    updateTime TIMESTAMP(3),
+    updateTime TIMESTAMP,
     wordCount BIGINT,
     monthlyTicket BIGINT,
     totalClick BIGINT,
     status STRING,
-    completeTime TIMESTAMP(3)
+    completeTime TIMESTAMP
 ) WITH (
     'connector' = 'jdbc',
     'url' = 'jdbc:mysql://mysql:3306/novels',

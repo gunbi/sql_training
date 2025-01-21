@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,6 +59,20 @@ class CsvParserTest {
         assertEquals(599L, node.get("monthlyTicket").asLong());
         assertEquals(1136931L, node.get("totalClick").asLong());
         assertEquals("完本", node.get("status").asText());
+
+        // 验证日期字段
+        assertTrue(node.get("createTime").isNumber());
+        assertTrue(node.get("updateTime").isNumber());
+        assertTrue(node.get("completeTime").isNumber());
+        
+        // 验证日期值的正确性
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        assertEquals("2012-03-12 09:51:04", 
+            dateFormat.format(new Date(node.get("createTime").asLong())));
+        assertEquals("2023-03-25 09:20:37", 
+            dateFormat.format(new Date(node.get("updateTime").asLong())));
+        assertEquals("2005-12-29 00:00:00", 
+            dateFormat.format(new Date(node.get("completeTime").asLong())));
     }
 
     @Test

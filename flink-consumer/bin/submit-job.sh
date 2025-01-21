@@ -5,7 +5,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 # 设置环境变量
-export FLINK_HOME=/Users/hanzhong/flink-1.9.0
+export FLINK_HOME=/Users/gunbi/flink-1.11.0
 export PATH=$FLINK_HOME/bin:$PATH
 
 # 参数配置
